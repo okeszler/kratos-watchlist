@@ -4,6 +4,24 @@
 <meta charset="UTF-8">
 <title>Kratos' Watchlist</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="description" content="Movies that matter – Filme vormerken, bewerten, wieder ansehen.">
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0e1a1f">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Watchlist">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Link-Vorschau (WhatsApp/Telegram/etc.) -->
+<meta property="og:title" content="Kratos' Watchlist">
+<meta property="og:description" content="Movies that matter">
+<meta property="og:image" content="./icon-512.png">
+<meta property="og:type" content="website">
+
 <style>
   html, body { margin: 0; padding: 0; height: 100%; background: #0e1a1f; overflow: hidden; }
   iframe {
@@ -20,6 +38,16 @@
     (Apps-Script-Editor -> Bereitstellen -> Bereitstellungen verwalten -> Web-App-URL,
     endet auf ".../exec").
   -->
-  <iframe src="https://script.google.com/macros/s/AKfycbwPf4b3cSs86jHYlB18H-YdjEBZs12e6p6EPzNq73V353JWlXdLcS_HKRoTPGqV4A/exec" allow="clipboard-write"></iframe>
+  <iframe src="HIER_DEINE_EXEC_URL_EINFUEGEN" allow="clipboard-write"></iframe>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function () {
+          // Offline-Fallback ist optional – bei Fehlschlag läuft die App einfach normal weiter.
+        });
+      });
+    }
+  </script>
 </body>
 </html>
