@@ -2,7 +2,7 @@
   "name": "Kratos' Watchlist",
   "short_name": "Watchlist",
   "description": "Movies that matter – Filme vormerken, bewerten, wieder ansehen.",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

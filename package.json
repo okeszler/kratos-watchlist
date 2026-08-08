@@ -1,0 +1,11 @@
+{
+  "name": "kratos-watchlist",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev . --d1=DB",
+    "deploy": "wrangler pages deploy . --project-name=kratos-watchlist"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

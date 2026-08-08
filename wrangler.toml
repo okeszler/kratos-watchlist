@@ -1,0 +1,10 @@
+name = "kratos-watchlist"
+compatibility_date = "2024-09-01"
+pages_build_output_dir = "."
+
+# Nur nötig, falls du per Wrangler-CLI statt über das Dashboard deployst.
+# Die database_id bekommst du nach "wrangler d1 create kratos-watchlist-db".
+[[d1_databases]]
+binding = "DB"
+database_name = "kratos-watchlist-db"
+database_id = "1eb97cd0-acf3-476d-9df3-440d6168cf4b"
