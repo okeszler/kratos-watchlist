@@ -2,11 +2,9 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Kratos' Watchlist</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <meta name="description" content="Movies that matter – Filme vormerken, bewerten, wieder ansehen.">
-
-<!-- PWA -->
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#0e1a1f">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
@@ -15,39 +13,730 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Watchlist">
 <meta name="mobile-web-app-capable" content="yes">
-
-<!-- Link-Vorschau (WhatsApp/Telegram/etc.) -->
 <meta property="og:title" content="Kratos' Watchlist">
 <meta property="og:description" content="Movies that matter">
 <meta property="og:image" content="./icon-512.png">
 <meta property="og:type" content="website">
-
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; background: #0e1a1f; overflow: hidden; }
-  iframe {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    border: none;
+  :root {
+    --bg: #0e1a1f;          /* tiefes Petrolblau */
+    --card: #16262c;        /* dunkles Türkis-Grau */
+    --card-edge: #223941;
+    --gold: #4fc3bf;        /* Türkis-Akzent (ehem. Gold) */
+    --gold-dim: #b97b4e;    /* Kupfer/Braun-Akzent */
+    --text: #eef2f0;
+    --muted: #7f9aa1;
+    --green: #6fae8f;
+    --red: #b5674a;
+    --chip: #223941;
   }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(26px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes popIn {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.44); }
+    100% { transform: scale(1); }
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translate(-50%, 7.5px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  button { transition: background-color .25s ease, color .25s ease, border-color .25s ease, transform .15s ease; }
+  button:active { transform: scale(.94); }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 90px;
+  }
+  header { text-align: center; padding: 22px 16px 10px; }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 34px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-shadow: 0 0 24px rgba(79,195,191,.25);
+  }
+  header p { color: var(--muted); font-size: 12px; letter-spacing: 1px; }
+
+  .tabs {
+    display: flex;
+    margin: 14px 16px 6px;
+    border: 1px solid var(--card-edge);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .tabs button {
+    flex: 1; padding: 11px 0;
+    background: transparent; border: none;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .5px;
+    cursor: pointer;
+  }
+  .tabs button.active { background: var(--card); color: var(--gold); }
+  .tabs button:hover { color: var(--text); }
+
+  main { padding: 10px 16px; }
+  .empty { text-align: center; color: var(--muted); padding: 48px 20px; font-size: 14px; line-height: 1.6; }
+  .loading { text-align: center; color: var(--muted); padding: 40px; }
+
+  .ticket {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--card-edge);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    animation: fadeSlideIn .88s ease both;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  @media (hover: hover) {
+    .ticket:hover {
+      transform: translateY(-2.5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,.3);
+      border-color: var(--gold-dim);
+    }
+  }
+  .ticket.hoch { border-left: 3px solid var(--gold); }
+
+  .poster {
+    flex: 0 0 64px;
+    width: 64px; height: 96px;
+    border-radius: 6px;
+    background: var(--bg);
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform .31s ease;
+  }
+  @media (hover: hover) {
+    .poster:hover { transform: scale(1.075); }
+  }
+  .poster-fallback {
+    flex: 0 0 64px;
+    width: 64px; height: 96px;
+    border-radius: 6px;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--card-edge);
+  }
+
+  .t-body { flex: 1; min-width: 0; }
+  .rank-badge {
+    flex: 0 0 30px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--gold);
+  }
+  .t-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .t-titel { font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: .5px; line-height: 1.1; }
+  .t-jahr { color: var(--muted); font-size: 11px; white-space: nowrap; }
+  .share-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; padding: 2px 0 2px 8px; line-height: 1;
+  }
+  .share-btn svg { width: 16px; height: 16px; }
+  @media (hover: hover) {
+    .share-btn:hover { color: var(--green); }
+  }
+  .share-option {
+    display: block; width: 100%; text-align: left;
+    padding: 12px 14px; margin-bottom: 8px;
+    border-radius: 8px; border: 1px solid var(--card-edge);
+    background: var(--bg); color: var(--text);
+    font-size: 14px; cursor: pointer;
+  }
+  @media (hover: hover) {
+    .share-option:hover { border-color: var(--gold-dim); }
+  }
+
+  .t-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+  .chip {
+    background: var(--chip);
+    color: var(--muted);
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .chip.rating { color: var(--gold); }
+  .chip.stream { color: var(--green); }
+
+  .t-notiz { color: var(--muted); font-size: 12.5px; margin-top: 6px; line-height: 1.4; }
+  .t-meta { color: var(--muted); font-size: 10.5px; margin-top: 7px; letter-spacing: .3px; }
+  .t-stars { color: var(--gold); font-size: 13px; letter-spacing: 2px; margin-top: 5px; }
+
+  .t-actions { display: flex; gap: 8px; margin-top: 9px; }
+  .t-actions button {
+    flex: 1; padding: 8px 0;
+    border-radius: 8px; border: 1px solid var(--card-edge);
+    background: transparent; color: var(--text);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  @media (hover: hover) {
+    .t-actions button:hover { border-color: var(--gold-dim); }
+    .t-actions .danger:hover { border-color: var(--red); color: var(--red); }
+  }
+  .t-actions .primary { border-color: var(--gold-dim); color: var(--gold); }
+  .t-actions .danger { color: var(--red); flex: 0 0 40px; }
+
+  .fab {
+    position: fixed; bottom: 18px; left: 16px; right: 16px;
+    padding: 15px 0; border: none; border-radius: 12px;
+    background: var(--gold); color: #0b1518;
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 0 6px 22px rgba(79,195,191,.28);
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  @media (hover: hover) {
+    .fab:hover { transform: translateY(-3px); box-shadow: 0 13px 32px rgba(79,195,191,.45); }
+  }
+
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,8,12,.82);
+    display: flex; align-items: flex-end; z-index: 10;
+    opacity: 0; pointer-events: none;
+    transition: opacity .31s ease;
+  }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    background: var(--card);
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 20px 18px 26px;
+    border-top: 1px solid var(--card-edge);
+    transform: translateY(60px);
+    transition: transform .75s cubic-bezier(.22,.9,.35,1);
+  }
+  .overlay.open .sheet { transform: translateY(0); }
+  .sheet h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 2px; color: var(--gold);
+    margin-bottom: 14px;
+  }
+  .sheet label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  .sheet input[type=text], .sheet textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--card-edge);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 15px;
+    padding: 11px 12px;
+  }
+  .sheet textarea { resize: none; height: 64px; }
+  .suggest-wrap { position: relative; }
+  .suggest-list {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+    background: var(--bg);
+    border: 1px solid var(--card-edge);
+    border-radius: 10px;
+    max-height: 240px; overflow-y: auto;
+    z-index: 5;
+    display: none;
+  }
+  .suggest-list.open { display: block; }
+  .suggest-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--card-edge);
+    transition: background-color .19s ease;
+  }
+  .suggest-item:last-child { border-bottom: none; }
+  .suggest-item:hover, .suggest-item:active { background: var(--chip); }
+  .suggest-poster {
+    flex: 0 0 32px; width: 32px; height: 48px; border-radius: 4px;
+    object-fit: cover; background: var(--card-edge);
+  }
+  .suggest-text { min-width: 0; }
+  .suggest-title { font-size: 13.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .suggest-year { font-size: 11px; color: var(--muted); }
+  .picked-badge {
+    display: none;
+    align-items: center; gap: 8px;
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: var(--chip);
+    border-radius: 8px;
+    font-size: 12px; color: var(--gold);
+  }
+  .picked-badge.show { display: flex; }
+  .picked-badge span.clear { margin-left: auto; color: var(--muted); cursor: pointer; }
+  .prio { display: flex; gap: 8px; margin-top: 4px; }
+  .prio button {
+    flex: 1; padding: 10px 0; border-radius: 8px; border: 1px solid var(--card-edge);
+    background: var(--bg); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .prio button.sel { border-color: var(--gold-dim); color: var(--gold); }
+  @media (hover: hover) {
+    .prio button:hover { border-color: var(--gold-dim); }
+  }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .sheet-actions button {
+    flex: 1; padding: 13px 0; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--card-edge); background: transparent; color: var(--muted);
+  }
+  .sheet-actions .save { background: var(--gold); border: none; color: #0b1518; }
+  @media (hover: hover) {
+    .sheet-actions .save:hover { box-shadow: 0 4px 14px rgba(79,195,191,.35); }
+    .sheet-actions button:not(.save):hover { border-color: var(--gold-dim); color: var(--text); }
+  }
+
+  .rate-stars { display: flex; justify-content: center; gap: 10px; padding: 10px 0 4px; }
+  .rate-stars button { background: none; border: none; font-size: 34px; color: var(--card-edge); cursor: pointer; }
+  .rate-stars button.on { color: var(--gold); animation: popIn .375s ease; }
+  .rate-titel { text-align: center; color: var(--text); font-size: 14px; margin-bottom: 6px; }
+
+  /* Detail-Overlay (Poster, Beschreibung, Streaming) */
+  .detail-poster { width: 120px; height: 180px; border-radius: 8px; display: block; margin: 0 auto 14px; object-fit: cover; }
+  .detail-titel { text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; }
+  .detail-facts { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+  .detail-text { color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+  .detail-stream-label { color: var(--muted); font-size: 11px; margin-top: 14px; letter-spacing: .5px; }
+
+  .toast {
+    position: fixed; bottom: 84px; left: 50%; transform: translate(-50%, 7.5px);
+    background: var(--card); border: 1px solid var(--gold-dim); color: var(--text);
+    padding: 9px 18px; border-radius: 20px; font-size: 13px;
+    opacity: 0; pointer-events: none; z-index: 20;
+    transition: opacity .31s ease, transform .31s ease;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
 </head>
 <body>
-  <!--
-    WICHTIG: Ersetze die URL unten durch deine eigene Web-App-URL
-    (Apps-Script-Editor -> Bereitstellen -> Bereitstellungen verwalten -> Web-App-URL,
-    endet auf ".../exec").
-  -->
-  <iframe src="https://script.google.com/macros/s/AKfycbwzyb-L4pbEGsQYtBLC6YBRzgHTUidRPpvUnmFY4c81Q-tDj7W6H2Etfp1q6idMZw/exec" allow="clipboard-write"></iframe>
+<header>
+  <h1>Kratos' Watchlist</h1>
+  <p>MOVIES THAT MATTER</p>
+</header>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('./sw.js').catch(function () {
-          // Offline-Fallback ist optional – bei Fehlschlag läuft die App einfach normal weiter.
-        });
-      });
+<div class="tabs">
+  <button id="tabOffen" class="active" onclick="setTab('offen')">Merkliste</button>
+  <button id="tabGesehen" onclick="setTab('gesehen')">Gesehen</button>
+  <button id="tabRanking" onclick="setTab('ranking')">Ranking</button>
+</div>
+
+<main id="liste"><div class="loading">Lade …</div></main>
+
+<button class="fab" onclick="openAdd()">+ Film vormerken</button>
+
+<div class="overlay" id="addOverlay">
+  <div class="sheet">
+    <h2>Film vormerken</h2>
+    <label>Titel</label>
+    <div class="suggest-wrap">
+      <input type="text" id="inTitel" placeholder="z. B. Enemy" autocomplete="off" oninput="onTitelInput()" onblur="setTimeout(hideSuggest, 200)">
+      <div class="suggest-list" id="suggestList"></div>
+    </div>
+    <div class="picked-badge" id="pickedBadge">
+      <span id="pickedText"></span><span class="clear" onclick="clearPick()">✕ ändern</span>
+    </div>
+    <label>Jahr (optional)</label>
+    <input type="text" id="inJahr" inputmode="numeric" placeholder="2013">
+    <label>Notiz (optional)</label>
+    <textarea id="inNotiz" placeholder="Warum? Wer hat's empfohlen?"></textarea>
+    <label>Priorität</label>
+    <div class="prio">
+      <button id="prioNormal" class="sel" onclick="setPrio('Normal')">Normal</button>
+      <button id="prioHoch" onclick="setPrio('Hoch')">Unbedingt sehen</button>
+    </div>
+    <div class="sheet-actions">
+      <button onclick="closeAdd()">Abbrechen</button>
+      <button class="save" onclick="saveFilm()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="rateOverlay">
+  <div class="sheet">
+    <h2>Gesehen!</h2>
+    <div class="rate-titel" id="rateTitel"></div>
+    <div class="rate-stars" id="rateStars"></div>
+    <div class="sheet-actions">
+      <button onclick="closeRate()">Abbrechen</button>
+      <button class="save" onclick="saveRating()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="detailOverlay">
+  <div class="sheet" id="detailContent"></div>
+</div>
+
+<div class="overlay" id="shareOverlay">
+  <div class="sheet">
+    <h2>Teilen über</h2>
+    <div id="shareOptions"></div>
+    <div class="sheet-actions"><button onclick="closeShare()">Abbrechen</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let filme = [];
+  let tab = 'offen';
+  let prio = 'Normal';
+  let rateId = null;
+  let rateVal = 0;
+  let pickedTmdbId = null;
+  let suggestTimer = null;
+  let suggestToken = 0;
+  let currentSuggestions = [];
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  async function api(url, opts) {
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try { const j = await res.json(); if (j && j.error) msg = j.error; } catch (e) {}
+      throw new Error(msg);
     }
-  </script>
+    return res.json();
+  }
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+  function setTab(t) {
+    tab = t;
+    document.getElementById('tabOffen').classList.toggle('active', t === 'offen');
+    document.getElementById('tabGesehen').classList.toggle('active', t === 'gesehen');
+    document.getElementById('tabRanking').classList.toggle('active', t === 'ranking');
+    render();
+  }
+
+  function factsChips(f) {
+    let html = '';
+    if (f.tmdbRating) html += '<span class="chip rating">★ ' + f.tmdbRating + '</span>';
+    if (f.laufzeit) html += '<span class="chip">' + f.laufzeit + ' min</span>';
+    if (f.genres) html += '<span class="chip">' + esc(f.genres.split(',')[0].trim()) + '</span>';
+    if (f.streaming) html += '<span class="chip stream">' + esc(f.streaming.split(',').slice(0, 2).join(', ')) + '</span>';
+    return html;
+  }
+
+  function render() {
+    if (tab === 'ranking') { renderRanking(); return; }
+    const el = document.getElementById('liste');
+    let items = filme.filter(function (f) { return tab === 'offen' ? f.status !== 'gesehen' : f.status === 'gesehen'; });
+
+    if (tab === 'offen') {
+      items.sort(function (a, b) { return a.prioritaet === b.prioritaet ? 0 : (a.prioritaet === 'Hoch' ? -1 : 1); });
+    }
+
+    if (items.length === 0) {
+      el.innerHTML = '<div class="empty">' + (tab === 'offen'
+        ? 'Noch nichts vorgemerkt.<br>Tippe unten auf „Film vormerken".'
+        : 'Noch keinen Film abgehakt.') + '</div>';
+      return;
+    }
+
+    el.innerHTML = items.map(function (f, idx) {
+      const posterHtml = f.poster
+        ? '<img class="poster" src="' + esc(f.poster) + '" onclick="openDetail(\'' + f.id + '\')">'
+        : '<div class="poster-fallback" onclick="openDetail(\'' + f.id + '\')">🎬</div>';
+
+      let html = '<div class="ticket' + (f.prioritaet === 'Hoch' && f.status !== 'gesehen' ? ' hoch' : '') + '" style="animation-delay:' + Math.min(idx * 40, 320) + 'ms">';
+      html += posterHtml;
+      html += '<div class="t-body">';
+      html += '<div class="t-top"><div class="t-titel">' + esc(f.titel) + '</div>';
+      html += '<div style="display:flex;align-items:center;gap:2px;">';
+      if (f.jahr) html += '<div class="t-jahr">' + esc(f.jahr) + '</div>';
+      html += '<button class="share-btn" onclick="shareContent(\'' + f.id + '\')" title="Teilen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>';
+      html += '</div></div>';
+      html += '<div class="t-facts">' + factsChips(f) + '</div>';
+      if (f.notiz) html += '<div class="t-notiz">' + esc(f.notiz) + '</div>';
+
+      if (f.status === 'gesehen') {
+        if (f.bewertung) html += '<div class="t-stars">' + '★'.repeat(f.bewertung) + '<span style="color:var(--card-edge)">' + '★'.repeat(5 - f.bewertung) + '</span></div>';
+        html += '<div class="t-meta">Gesehen am ' + esc(f.gesehenAm) + '</div>';
+        html += '<div class="t-actions">'
+          + '<button class="primary" onclick="doRewatch(\'' + f.id + '\')">🎞️ Rewatch</button>'
+          + '<button onclick="doOffen(\'' + f.id + '\')">Zurück</button>'
+          + '<button class="danger" onclick="doDelete(\'' + f.id + '\')">✕</button></div>';
+      } else {
+        html += '<div class="t-meta">' + (f.rewatch ? '🎞️ Worth to rewatch' : 'Vorgemerkt am ' + esc(f.hinzugefuegt)) + '</div>';
+        html += '<div class="t-actions">'
+          + '<button class="primary" onclick="openRate(\'' + f.id + '\')">Gesehen ✓</button>'
+          + '<button class="danger" onclick="doDelete(\'' + f.id + '\')">✕</button></div>';
+      }
+      html += '</div></div>';
+      return html;
+    }).join('');
+  }
+
+  function refresh(data) { filme = data; render(); }
+  function fail(err) { toast('Fehler: ' + err.message); render(); }
+
+  function renderRanking() {
+    const el = document.getElementById('liste');
+    const rated = filme.filter(function (f) { return f.bewertung > 0; });
+    rated.sort(function (a, b) {
+      if (b.bewertung !== a.bewertung) return b.bewertung - a.bewertung;
+      return (b.tmdbRating || 0) - (a.tmdbRating || 0);
+    });
+
+    if (rated.length === 0) {
+      el.innerHTML = '<div class="empty">Noch keine bewerteten Filme.<br>Hak einen Film in „Gesehen" ab und bewerte ihn.</div>';
+      return;
+    }
+
+    const shareSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+
+    el.innerHTML = rated.map(function (f, idx) {
+      const posterHtml = f.poster
+        ? '<img class="poster" src="' + esc(f.poster) + '" onclick="openDetail(\'' + f.id + '\')">'
+        : '<div class="poster-fallback" onclick="openDetail(\'' + f.id + '\')">🎬</div>';
+      const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : ('#' + (idx + 1));
+
+      let html = '<div class="ticket" style="animation-delay:' + Math.min(idx * 40, 320) + 'ms">';
+      html += '<div class="rank-badge">' + medal + '</div>';
+      html += posterHtml;
+      html += '<div class="t-body">';
+      html += '<div class="t-top"><div class="t-titel">' + esc(f.titel) + '</div>';
+      html += '<div style="display:flex;align-items:center;gap:2px;">';
+      if (f.jahr) html += '<div class="t-jahr">' + esc(f.jahr) + '</div>';
+      html += '<button class="share-btn" onclick="shareContent(\'' + f.id + '\')" title="Teilen">' + shareSvg + '</button>';
+      html += '</div></div>';
+      html += '<div class="t-stars">' + '★'.repeat(f.bewertung) + '<span style="color:var(--card-edge)">' + '★'.repeat(5 - f.bewertung) + '</span></div>';
+      html += '<div class="t-facts">' + factsChips(f) + '</div>';
+      html += '<div class="t-meta">' + (f.status === 'offen' ? '🎞️ Zum Rewatch vorgemerkt' : 'Gesehen am ' + esc(f.gesehenAm)) + '</div>';
+      html += '</div></div>';
+      return html;
+    }).join('');
+  }
+
+  function openAdd() {
+    document.getElementById('inTitel').value = '';
+    document.getElementById('inJahr').value = '';
+    document.getElementById('inNotiz').value = '';
+    setPrio('Normal');
+    clearPick();
+    hideSuggest();
+    document.getElementById('addOverlay').classList.add('open');
+    setTimeout(function () { document.getElementById('inTitel').focus(); }, 150);
+  }
+  function closeAdd() { document.getElementById('addOverlay').classList.remove('open'); hideSuggest(); }
+
+  function hideSuggest() { document.getElementById('suggestList').classList.remove('open'); }
+
+  function onTitelInput() {
+    clearPick();
+    const q = document.getElementById('inTitel').value;
+    clearTimeout(suggestTimer);
+    if (q.trim().length < 2) { hideSuggest(); return; }
+    suggestTimer = setTimeout(function () { runSuggest(q); }, 350);
+  }
+
+  function runSuggest(q) {
+    const myToken = ++suggestToken;
+    api('/api/search?q=' + encodeURIComponent(q)).then(function (results) {
+      if (myToken !== suggestToken) return; // veraltete Antwort ignorieren
+      renderSuggest(results, q);
+    }).catch(function () { hideSuggest(); });
+  }
+
+  function renderSuggest(results, q) {
+    const list = document.getElementById('suggestList');
+    if (!results || results.length === 0) { hideSuggest(); return; }
+    currentSuggestions = results;
+    list.innerHTML = results.map(function (r, i) {
+      const poster = r.poster
+        ? '<img class="suggest-poster" src="' + esc(r.poster) + '">'
+        : '<div class="suggest-poster"></div>';
+      return '<div class="suggest-item" data-idx="' + i + '">'
+        + poster
+        + '<div class="suggest-text"><div class="suggest-title">' + esc(r.titel) + '</div>'
+        + '<div class="suggest-year">' + esc(r.jahr || '') + '</div></div>'
+        + '</div>';
+    }).join('');
+
+    // mousedown/touchstart feuern VOR dem blur des Eingabefelds –
+    // mit click würde die Liste sonst verschwinden, bevor die Auswahl ankommt.
+    Array.prototype.forEach.call(list.querySelectorAll('.suggest-item'), function (el) {
+      const handler = function (ev) {
+        ev.preventDefault();
+        const idx = Number(el.getAttribute('data-idx'));
+        if (currentSuggestions[idx]) pickSuggestion(currentSuggestions[idx]);
+      };
+      el.addEventListener('mousedown', handler);
+      el.addEventListener('touchstart', handler, { passive: false });
+    });
+
+    list.classList.add('open');
+  }
+
+  function pickSuggestion(r) {
+    pickedTmdbId = r.id;
+    document.getElementById('inTitel').value = r.titel;
+    document.getElementById('inTitel').blur();
+    document.getElementById('inJahr').value = r.jahr || '';
+    document.getElementById('pickedText').textContent = '✓ ' + r.titel + (r.jahr ? ' (' + r.jahr + ')' : '') + ' erkannt';
+    document.getElementById('pickedBadge').classList.add('show');
+    hideSuggest();
+  }
+
+  function clearPick() {
+    pickedTmdbId = null;
+    document.getElementById('pickedBadge').classList.remove('show');
+  }
+
+  function setPrio(p) {
+    prio = p;
+    document.getElementById('prioNormal').classList.toggle('sel', p === 'Normal');
+    document.getElementById('prioHoch').classList.toggle('sel', p === 'Hoch');
+  }
+  function saveFilm() {
+    const titel = document.getElementById('inTitel').value.trim();
+    if (!titel) { toast('Titel fehlt'); return; }
+    const notiz = document.getElementById('inNotiz').value.trim();
+    const jahrVal = document.getElementById('inJahr').value.trim();
+    closeAdd();
+    toast('Suche Infos …');
+    const onDone = function (d) { refresh(d); toast('Vorgemerkt: ' + titel); };
+    if (pickedTmdbId) {
+      api('/api/filme', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tmdbId: pickedTmdbId, titel: titel, notiz: notiz, prioritaet: prio }) })
+        .then(onDone).catch(fail);
+    } else {
+      api('/api/filme', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ titel: titel, jahr: jahrVal, notiz: notiz, prioritaet: prio }) })
+        .then(onDone).catch(fail);
+    }
+  }
+
+  function openRate(id) {
+    rateId = id; rateVal = 0;
+    const f = filme.find(function (x) { return x.id === id; });
+    document.getElementById('rateTitel').textContent = f ? f.titel : '';
+    drawStars();
+    document.getElementById('rateOverlay').classList.add('open');
+  }
+  function closeRate() { document.getElementById('rateOverlay').classList.remove('open'); }
+  function drawStars() {
+    const el = document.getElementById('rateStars');
+    let html = '';
+    for (let i = 1; i <= 5; i++) html += '<button class="' + (i <= rateVal ? 'on' : '') + '" onclick="pickStar(' + i + ')">★</button>';
+    el.innerHTML = html;
+  }
+  function pickStar(n) { rateVal = n; drawStars(); }
+  function saveRating() {
+    closeRate();
+    toast('Wird gespeichert …');
+    api('/api/filme/' + rateId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'gesehen', bewertung: rateVal }) })
+      .then(function (d) { refresh(d); toast('Abgehakt!'); })
+      .catch(fail);
+  }
+
+  function openDetail(id) {
+    const f = filme.find(function (x) { return x.id === id; });
+    if (!f) return;
+    const el = document.getElementById('detailContent');
+    let html = '';
+    if (f.poster) html += '<img class="detail-poster" src="' + esc(f.poster) + '">';
+    html += '<div class="detail-titel">' + esc(f.titel) + (f.jahr ? ' (' + esc(f.jahr) + ')' : '') + '</div>';
+    html += '<div class="detail-facts">' + factsChips(f) + '</div>';
+    if (f.beschreibung) html += '<div class="detail-text">' + esc(f.beschreibung) + '</div>';
+    if (f.streaming) {
+      html += '<div class="detail-stream-label">STREAMING (AT)</div>';
+      html += '<div class="detail-facts">' + f.streaming.split(',').map(function (s) {
+        return '<span class="chip stream">' + esc(s.trim()) + '</span>';
+      }).join('') + '</div>';
+    } else if (!f.poster) {
+      html += '<div class="detail-text" style="text-align:center;margin-top:8px;">Keine TMDb-Daten gefunden.</div>';
+    }
+    html += '<div class="sheet-actions"><button onclick="shareContent(\'' + f.id + '\')">Teilen</button><button onclick="closeDetail()">Schließen</button></div>';
+    el.innerHTML = html;
+    document.getElementById('detailOverlay').classList.add('open');
+  }
+  function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
+
+  let shareState = { title: '', link: '' };
+
+  function shareContent(id) {
+    const f = filme.find(function (x) { return x.id === id; });
+    if (!f) return;
+    const link = f.tmdbId
+      ? 'https://www.themoviedb.org/movie/' + f.tmdbId
+      : 'https://www.themoviedb.org/search?query=' + encodeURIComponent(f.titel);
+    const titel = f.titel + (f.jahr ? ' (' + f.jahr + ')' : '');
+
+    if (navigator.share) {
+      navigator.share({ title: titel, text: titel + ' 🎬', url: link }).catch(function (err) {
+        if (err && err.name === 'AbortError') return; // Nutzer hat Auswahl abgebrochen
+        openShareFallback(titel, link);
+      });
+    } else {
+      openShareFallback(titel, link);
+    }
+  }
+
+  function openShareFallback(titel, link) {
+    shareState = { title: titel, link: link };
+    document.getElementById('shareOptions').innerHTML =
+      '<button class="share-option" onclick="shareVia(\'whatsapp\')">WhatsApp</button>'
+      + '<button class="share-option" onclick="shareVia(\'telegram\')">Telegram</button>'
+      + '<button class="share-option" onclick="shareVia(\'mail\')">E-Mail</button>'
+      + '<button class="share-option" onclick="shareVia(\'copy\')">Link kopieren</button>';
+    document.getElementById('shareOverlay').classList.add('open');
+  }
+  function closeShare() { document.getElementById('shareOverlay').classList.remove('open'); }
+
+  function shareVia(kind) {
+    const text = shareState.title + ' 🎬\n' + shareState.link;
+    if (kind === 'whatsapp') {
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    } else if (kind === 'telegram') {
+      window.open('https://t.me/share/url?url=' + encodeURIComponent(shareState.link) + '&text=' + encodeURIComponent(shareState.title), '_blank');
+    } else if (kind === 'mail') {
+      window.open('mailto:?subject=' + encodeURIComponent(shareState.title) + '&body=' + encodeURIComponent(text), '_blank');
+    } else if (kind === 'copy') {
+      navigator.clipboard.writeText(text).then(function () { toast('Link kopiert'); })
+        .catch(function () { toast('Kopieren fehlgeschlagen'); });
+    }
+    closeShare();
+  }
+
+  function doOffen(id) {
+    api('/api/filme/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'offen' }) })
+      .then(refresh).catch(fail);
+  }
+  function doRewatch(id) {
+    api('/api/filme/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'rewatch' }) })
+      .then(function (d) { refresh(d); toast('Zurück auf die Merkliste 🎞️'); })
+      .catch(fail);
+  }
+  function doDelete(id) {
+    if (!confirm('Diesen Film wirklich löschen?')) return;
+    api('/api/filme/' + id, { method: 'DELETE' }).then(refresh).catch(fail);
+  }
+
+  api('/api/filme').then(refresh).catch(fail);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
+  }
+</script>
 </body>
 </html>
