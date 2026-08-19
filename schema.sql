@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS filme (
   beschreibung TEXT,
   streaming TEXT,
   rewatch INTEGER DEFAULT 0,
-  tmdb_id INTEGER
+  tmdb_id INTEGER,
+  streaming_new INTEGER DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_filme_status ON filme(status);

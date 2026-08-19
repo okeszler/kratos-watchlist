@@ -37,7 +37,8 @@ export function mapRow(r) {
     beschreibung: r.beschreibung || '',
     streaming: r.streaming || '',
     rewatch: !!r.rewatch,
-    tmdbId: r.tmdb_id || ''
+    tmdbId: r.tmdb_id || '',
+    streamingNeu: !!r.streaming_new
   };
 }
 

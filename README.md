@@ -125,5 +125,26 @@ functions/api/
   filme.js                 GET /api/filme, POST /api/filme
   filme/[id].js             PATCH/DELETE /api/filme/:id
   search.js                 GET /api/search?q=... (Live-Suchvorschläge)
+  sync.js                   POST /api/sync (Streaming-Abgleich, wird vom cron-worker aufgerufen)
 wrangler.toml              Wrangler-Konfiguration (D1-Binding für lokale Dev/CLI-Deploys)
+cron-worker/                Separater Cloudflare Worker mit täglichem Cron Trigger
+```
+
+## Streaming-Verfügbarkeit (automatischer Abgleich)
+
+Damit vorgemerkte Filme automatisch als "✨ Neu verfügbar" markiert werden,
+sobald sie in Österreich neu bei einem Streaming-Dienst auftauchen, ruft
+ein separater kleiner Worker (`cron-worker/`) einmal täglich
+`POST /api/sync` auf. Cron Triggers hängen bei Cloudflare direkt an
+Workers, nicht an Pages-Projekten — daher der eigene, minimale Worker.
+
+Einmalig deployen:
+```bash
+cd cron-worker
+npx wrangler deploy
+```
+
+Manuell testen (ruft denselben Endpunkt auf wie der Cron):
+```bash
+curl -X POST https://kratos-watchlist.pages.dev/api/sync
 ```

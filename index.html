@@ -168,6 +168,7 @@
   }
   .chip.rating { color: var(--gold); }
   .chip.stream { color: var(--green); }
+  .chip.neu { background: var(--green); color: #0b1518; font-weight: 700; animation: popIn .6s ease; }
 
   .t-notiz { color: var(--muted); font-size: 12.5px; margin-top: 6px; line-height: 1.4; }
   .t-meta { color: var(--muted); font-size: 10.5px; margin-top: 7px; letter-spacing: .3px; }
@@ -432,6 +433,7 @@
     if (f.tmdbRating) html += '<span class="chip rating">★ ' + f.tmdbRating + '</span>';
     if (f.laufzeit) html += '<span class="chip">' + f.laufzeit + ' min</span>';
     if (f.genres) html += '<span class="chip">' + esc(f.genres.split(',')[0].trim()) + '</span>';
+    if (f.streamingNeu) html += '<span class="chip neu">✨ Neu verfügbar</span>';
     if (f.streaming) html += '<span class="chip stream">' + esc(f.streaming.split(',').slice(0, 2).join(', ')) + '</span>';
     return html;
   }
@@ -666,6 +668,10 @@
     }
     html += '<div class="sheet-actions"><button onclick="shareContent(\'' + f.id + '\')">Teilen</button><button onclick="closeDetail()">Schließen</button></div>';
     el.innerHTML = html;
+    if (f.streamingNeu) {
+      f.streamingNeu = false;
+      api('/api/filme/' + f.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'ack_streaming' }) }).catch(function () {});
+    }
     document.getElementById('detailOverlay').classList.add('open');
   }
   function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
@@ -730,7 +736,12 @@
     api('/api/filme/' + id, { method: 'DELETE' }).then(refresh).catch(fail);
   }
 
-  api('/api/filme').then(refresh).catch(fail);
+  api('/api/filme').then(function (data) {
+    refresh(data);
+    const neuCount = data.filter(function (f) { return f.streamingNeu; }).length;
+    if (neuCount === 1) toast('✨ 1 Film ist jetzt neu verfügbar');
+    else if (neuCount > 1) toast('✨ ' + neuCount + ' Filme sind jetzt neu verfügbar');
+  }).catch(fail);
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

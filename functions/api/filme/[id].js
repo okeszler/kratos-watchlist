@@ -17,6 +17,10 @@ export async function onRequestPatch({ request, env, params }) {
       await env.DB.prepare(
         'UPDATE filme SET status = ?, rewatch = 1 WHERE id = ?'
       ).bind('offen', id).run();
+    } else if (body.action === 'ack_streaming') {
+      await env.DB.prepare(
+        'UPDATE filme SET streaming_new = 0 WHERE id = ?'
+      ).bind(id).run();
     } else {
       return errorJson('Unbekannte Aktion', 400);
     }

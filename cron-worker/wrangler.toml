@@ -1,0 +1,9 @@
+name = "kratos-watchlist-cron"
+main = "worker.js"
+compatibility_date = "2024-09-01"
+
+[triggers]
+crons = ["0 6 * * *"]   # täglich 06:00 UTC = 07:00/08:00 MEZ/MESZ
+
+[vars]
+APP_URL = "https://kratos-watchlist.pages.dev"
